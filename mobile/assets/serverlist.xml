@@ -3,6 +3,14 @@
     <version>2</version>
     <server>
         <player-name>Evo_Master</player-name>
+        <name>Evolution Server</name>
+        <desc>Allows you to play with all cards</desc>
+        <ip>server.evolutionygo.com</ip>
+        <port>7711</port>
+        <keep>true</keep>
+    </server>
+    <server>
+        <player-name>Evo_Master</player-name>
         <name>Pre-releace Server</name>
         <desc>Allows you to play with pre-released cards</desc>
         <ip>mygo.superpre.pro</ip>
@@ -31,14 +39,6 @@
         <desc>Allows you to play with OCG cards</desc>
         <ip>koishi.momobako.com</ip>
         <port>7210</port>
-        <keep>true</keep>
-    </server>
-    <server>
-        <player-name>Evo_Master</player-name>
-        <name>Evolution Server</name>
-        <desc>Allows you to play with all cards</desc>
-        <ip>server.evolutionygo.com</ip>
-        <port>7711</port>
         <keep>true</keep>
     </server>
     <server>
