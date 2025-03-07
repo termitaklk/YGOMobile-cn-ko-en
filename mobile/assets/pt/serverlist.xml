@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <servers>
     <version>2</version>
-
+    <server>
+        <player-name>Evo_Master</player-name>
+        <name>Servidor Evolution</name>
+        <desc>Ambientes TCG</desc>
+        <ip>server.evolutionygo.com</ip>
+        <port>7711</port>
+        <keep>true</keep>
+    </server>
     <server>
         <player-name>Evo_Master</player-name>
         <name>Mycard_Superpre☆Necessita de baixar expansões</name>
@@ -19,14 +26,6 @@
         <keep>true</keep>
     </server>
     <server>
-        <player-name>Evo_Master</player-name>
-        <name>Servidor Evolution TCG</name>
-        <desc>Ambientes TCG</desc>
-        <ip>server.evolutionygo.com</ip>
-        <port>7711</port>
-        <keep>true</keep>
-    </server>
-     <server>
         <player-name>Evo_Master</player-name>
         <name>Servidor Koishi TCG</name>
         <desc>TCG</desc>
