@@ -3,6 +3,14 @@
     <version>2</version>
     <server>
         <player-name>Evo_Master</player-name>
+        <name>진화 서버</name>
+        <desc>모든 카드로 플레이 가능</desc>
+        <ip>server.evolutionygo.com</ip>
+        <port>7711</port>
+        <keep>true</keep>
+    </server>
+    <server>
+        <player-name>Evo_Master</player-name>
         <name>사전 출시 서버</name>
         <desc>미리 출시된 카드로 플레이할 수 있습니다</desc>
         <ip>mygo.superpre.pro</ip>
@@ -31,14 +39,6 @@
         <desc>OCG 카드로 플레이 가능</desc>
         <ip>koishi.momobako.com</ip>
         <port>7210</port>
-        <keep>true</keep>
-    </server>
-    <server>
-        <player-name>Evo_Master</player-name>
-        <name>진화 서버</name>
-        <desc>모든 카드로 플레이 가능</desc>
-        <ip>server.evolutionygo.com</ip>
-        <port>7711</port>
         <keep>true</keep>
     </server>
     <server>
