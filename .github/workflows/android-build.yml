@@ -56,10 +56,14 @@ jobs:
           cd mobile
           ../gradlew assembleDebug
 
+      - name: Debug APK Output
+        run: ls -R mobile/build/outputs/apk/
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: mobile/build/outputs/apk/debug/mobile-debug.apk
+          path: mobile/build/outputs/apk/**/*.apk
+
 
 
