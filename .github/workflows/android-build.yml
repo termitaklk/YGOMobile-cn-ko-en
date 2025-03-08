@@ -51,21 +51,35 @@ jobs:
           mkdir -p mobile/libs
           wget -O mobile/libs/libWindbot.aar $(curl -s https://api.github.com/repos/mercury233/libWindbot/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
+      - name: Clone assets repository
+        run: |
+          if [ -d "mobile/assets/.git" ]; then
+            echo "Assets repository already exists, pulling latest changes..."
+            cd mobile/assets
+            git pull origin main
+          else
+            echo "Cloning assets repository..."
+            rm -rf mobile/assets  # Opcional: Elimina la carpeta si hay conflictos
+            git clone https://github.com/termitaklk/assets-mobile.git mobile/assets
+          fi
+
       - name: Build APK
         run: |
           cd mobile
           ../gradlew assembleDebug
 
       - name: Debug APK Output
+        if: always()
         run: |
           echo "Checking generated APKs..."
-          ls -R mobile/build/outputs/apk/
+          ls -R mobile/build/outputs/apk/ || echo "No APKs found"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: YGOMobile-APK
           path: mobile/build/outputs/apk/cn/debug/YGOMobile_3.12.0.Apk
+
 
 
 
