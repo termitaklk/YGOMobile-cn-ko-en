@@ -57,13 +57,16 @@ jobs:
           ../gradlew assembleDebug
 
       - name: Debug APK Output
-        run: ls -R mobile/build/outputs/apk/
+        run: |
+          echo "Checking generated APKs..."
+          ls -R mobile/build/outputs/apk/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: mobile/build/outputs/apk/**/*.apk
+          name: YGOMobile-APK
+          path: mobile/build/outputs/apk/cn/debug/YGOMobile_3.12.0.Apk
+
 
 
 
