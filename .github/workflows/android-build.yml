@@ -63,10 +63,10 @@ jobs:
             git clone https://github.com/termitaklk/assets-mobile.git mobile/assets
           fi
 
-      - name: Build APK
+      - name: Build APK Release
         run: |
           cd mobile
-          ../gradlew assembleDebug
+          ../gradlew assembleRelease
 
       - name: Debug APK Output
         if: always()
