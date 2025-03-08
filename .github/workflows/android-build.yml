@@ -1,0 +1,55 @@
+name: Android Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    env:
+      ANDROID_NDK_HOME: ${{ github.workspace }}/android-ndk-r21d
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download NDK r21d
+        run: |
+          wget https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
+          unzip android-ndk-r21d-linux-x86_64.zip
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+
+      - name: Set up Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Grant execute permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build Native Libraries
+        run: |
+          cd libygo
+          $ANDROID_NDK_HOME/ndk-build -j4
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: mobile/build/outputs/apk/debug/mobile-debug.apk
