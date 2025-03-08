@@ -43,7 +43,7 @@ jobs:
       - name: Build Native Libraries
         run: |
           cd libygo
-          $ANDROID_NDK_HOME/ndk-build -j4
+          $ANDROID_NDK_HOME/ndk-build NDK_PROJECT_PATH=$(pwd) -j4
 
       - name: Build APK
         run: ./gradlew assembleDebug
