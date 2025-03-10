@@ -100,18 +100,21 @@ jobs:
       - name: Generate Keystore
         run: |
           keytool -genkeypair -v \
-            -keystore my-release-key.jks \
+            -keystore $GITHUB_WORKSPACE/my-release-key.jks \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -alias my-key-alias \
             -storepass android \
             -keypass android \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      - name: Verify Keystore
+        run: ls -l $GITHUB_WORKSPACE/my-release-key.jks
+
       - name: Build Signed APK
         run: |
           cd mobile
           ../gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=../../my-release-key.jks \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/my-release-key.jks \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=my-key-alias \
             -Pandroid.injected.signing.key.password=android
