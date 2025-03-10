@@ -41,11 +41,11 @@ jobs:
           restore-keys: |
             ndk-${{ runner.os }}-
 
-      - name: Download NDK r21d
+      - name: Download NDK r21d if Not Cached
         if: steps.ndk-cache.outputs.cache-hit != 'true'
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip -O ndk.zip
-          rm -rf android-ndk-r21d  # Asegurar que no haya conflictos
+          rm -rf android-ndk-r21d
           unzip -o ndk.zip > /dev/null
           echo "NDK installed at: $(pwd)/android-ndk-r21d"
 
@@ -74,29 +74,25 @@ jobs:
       - name: Build Native Libraries
         run: |
           cd libcore
-          if [ ! -d "obj" ]; then
+          if [ ! -d "obj" ] || [ ! -d "libs" ]; then
             echo "No cache found, building NDK..."
             $ANDROID_NDK_HOME/ndk-build -j4
           else
             echo "Using cached NDK build."
           fi
 
+      - name: Download and Copy Assets
+        run: |
+          echo "Removing old assets..."
+          rm -rf mobile/src/main/assets
+          echo "Cloning assets repository..."
+          git clone https://github.com/termitaklk/assets-mobile.git mobile/src/main/assets
+          echo "Assets downloaded and placed in mobile/src/main/assets"
+
       - name: Download libWindbot.aar
         run: |
           mkdir -p mobile/libs
           wget -O mobile/libs/libWindbot.aar $(curl -s https://api.github.com/repos/mercury233/libWindbot/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
-
-      - name: Clone assets repository
-        run: |
-          if [ -d "mobile/assets/.git" ]; then
-            echo "Assets repository already exists, pulling latest changes..."
-            cd mobile/assets
-            git pull origin main
-          else
-            echo "Cloning assets repository..."
-            rm -rf mobile/assets
-            git clone https://github.com/termitaklk/assets-mobile.git mobile/assets
-          fi
 
       - name: Generate Keystore
         run: |
@@ -108,17 +104,20 @@ jobs:
             -keypass android \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Verify Keystore
-        run: ls -l $GITHUB_WORKSPACE/my-release-key.jks
-
       - name: Build Signed APK
         run: |
           cd mobile
-          ../gradlew assembleRelease \
+          ../gradlew assembleRelease --stacktrace --info \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/my-release-key.jks \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=my-key-alias \
             -Pandroid.injected.signing.key.password=android
+
+      - name: Debug APK Output
+        if: always()
+        run: |
+          echo "Checking generated APKs..."
+          ls -R mobile/build/outputs/apk/ || echo "No APKs found"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
