@@ -20,19 +20,20 @@ jobs:
       ANDROID_NDK_HOME: ${{ github.workspace }}/android-ndk-r21d
 
     steps:
-      - name: Checkout Repository
+      # 🔹 **Paso 1: Clonar el repositorio principal**
+      - name: Checkout Repository (Main Repo)
         uses: actions/checkout@v4
 
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      # 🔹 **Paso 2: Descargar y copiar los assets antes del NDK**
+      - name: Download and Copy Assets
+        run: |
+          echo "Removing old assets..."
+          rm -rf mobile/src/main/assets
+          echo "Cloning assets repository..."
+          git clone https://github.com/termitaklk/assets-mobile.git mobile/src/main/assets
+          echo "Assets downloaded and placed in mobile/src/main/assets"
 
+      # 🔹 **Paso 3: Cache del NDK**
       - name: Cache Android NDK
         uses: actions/cache@v3
         with:
@@ -49,18 +50,32 @@ jobs:
           unzip -o ndk.zip > /dev/null
           echo "NDK installed at: $(pwd)/android-ndk-r21d"
 
+      # 🔹 **Paso 4: Configurar Java y Gradle**
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-          
+
+      # 🔹 **Paso 5: Cache del Gradle completo para evitar recompilar dependencias**
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            mobile/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
       - name: Set up Gradle
         uses: gradle/gradle-build-action@v3
 
       - name: Grant execute permission to Gradlew
         run: chmod +x gradlew
 
+      # 🔹 **Paso 6: Cache para la compilación de NDK (ndk-build)**
       - name: Cache NDK Build output
         uses: actions/cache@v3
         with:
@@ -81,19 +96,12 @@ jobs:
             echo "Using cached NDK build."
           fi
 
-      - name: Download and Copy Assets
-        run: |
-          echo "Removing old assets..."
-          rm -rf mobile/src/main/assets
-          echo "Cloning assets repository..."
-          git clone https://github.com/termitaklk/assets-mobile.git mobile/src/main/assets
-          echo "Assets downloaded and placed in mobile/src/main/assets"
-
       - name: Download libWindbot.aar
         run: |
           mkdir -p mobile/libs
           wget -O mobile/libs/libWindbot.aar $(curl -s https://api.github.com/repos/mercury233/libWindbot/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
+      # 🔹 **Paso 7: Generar Keystore para firmar la APK**
       - name: Generate Keystore
         run: |
           keytool -genkeypair -v \
@@ -104,6 +112,7 @@ jobs:
             -keypass android \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      # 🔹 **Paso 8: Compilar APK con cache de Gradle**
       - name: Build Signed APK
         run: |
           cd mobile
@@ -113,17 +122,20 @@ jobs:
             -Pandroid.injected.signing.key.alias=my-key-alias \
             -Pandroid.injected.signing.key.password=android
 
+      # 🔹 **Paso 9: Verificar si el APK se generó correctamente**
       - name: Debug APK Output
         if: always()
         run: |
           echo "Checking generated APKs..."
           ls -R mobile/build/outputs/apk/ || echo "No APKs found"
 
+      # 🔹 **Paso 10: Subir APK como artifact**
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Signed-YGOMobile-APK
           path: mobile/build/outputs/apk/cn/release/YGOMobile_3.12.0.Apk
+
 
 
 
