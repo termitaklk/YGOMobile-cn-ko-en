@@ -4,10 +4,10 @@
 
     <server>
         <player-name>Knight of Hanoi</player-name>
-        <name>萌卡直连正式+超先行服</name>
-        <desc>与本应用正式卡同步支持使用右下角下载的扩展卡</desc>
-        <ip>mygo.superpre.pro</ip>
-        <port>888</port>
+        <name>Evolution TCG Server</name>
+        <desc>TCG environments</desc>
+        <ip>server.evolutionygo.com</ip>
+        <port>7711</port>
         <keep>true</keep>
     </server>
     <server>
