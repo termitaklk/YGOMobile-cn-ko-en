@@ -123,7 +123,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Signed-YGOMobile-APK
-          path: mobile/build/outputs/apk/release/*.apk
+          path: mobile/build/outputs/apk/cn/release/YGOMobile_3.12.0.Apk
 
 
 
