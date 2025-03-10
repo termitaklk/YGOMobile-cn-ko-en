@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build APK
+    name: Build and Sign APK
     runs-on: ubuntu-latest
 
     env:
@@ -23,7 +23,26 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Cache Android NDK
+        uses: actions/cache@v3
+        with:
+          path: android-ndk-r21d
+          key: ndk-${{ runner.os }}-r21d
+          restore-keys: |
+            ndk-${{ runner.os }}-
+
       - name: Download NDK r21d
+        if: steps.ndk-cache.outputs.cache-hit != 'true'
         run: |
           wget https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
           unzip android-ndk-r21d-linux-x86_64.zip
@@ -41,10 +60,25 @@ jobs:
       - name: Grant execute permission to Gradlew
         run: chmod +x gradlew
 
+      - name: Cache NDK Build output
+        uses: actions/cache@v3
+        with:
+          path: |
+            libcore/obj
+            libcore/libs
+          key: ndk-build-${{ runner.os }}-${{ hashFiles('libcore/**') }}
+          restore-keys: |
+            ndk-build-${{ runner.os }}-
+
       - name: Build Native Libraries
         run: |
           cd libcore
-          $ANDROID_NDK_HOME/ndk-build -j4
+          if [ ! -d "obj" ]; then
+            echo "No cache found, building NDK..."
+            $ANDROID_NDK_HOME/ndk-build -j4
+          else
+            echo "Using cached NDK build."
+          fi
 
       - name: Download libWindbot.aar
         run: |
@@ -59,26 +93,35 @@ jobs:
             git pull origin main
           else
             echo "Cloning assets repository..."
-            rm -rf mobile/assets  # Opcional: Elimina la carpeta si hay conflictos
+            rm -rf mobile/assets
             git clone https://github.com/termitaklk/assets-mobile.git mobile/assets
           fi
 
-      - name: Build APK Release
+      - name: Generate Keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore my-release-key.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias my-key-alias \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build Signed APK
         run: |
           cd mobile
-          ../gradlew assembleRelease
+          ../gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=../../my-release-key.jks \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=my-key-alias \
+            -Pandroid.injected.signing.key.password=android
 
-      - name: Debug APK Output
-        if: always()
-        run: |
-          echo "Checking generated APKs..."
-          ls -R mobile/build/outputs/apk/ || echo "No APKs found"
-
-      - name: Upload APK Artifact
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: YGOMobile-APK
-          path: mobile/build/outputs/apk/cn/release/YGOMobile_3.12.0.Apk
+          name: Signed-YGOMobile-APK
+          path: mobile/build/outputs/apk/release/*.apk
+
 
 
 
