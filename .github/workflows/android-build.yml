@@ -40,7 +40,7 @@ jobs:
           mkdir -p mobile/assets/data/fonts
           echo "Downloading required assets..."
           wget -O mobile/assets/data/cards.cdb https://github.com/termitaklk/assets-mobile/raw/refs/heads/main/data/cards.cdb  # Reemplazar con URL válida
-          wget -O mobile/assets/data/pics.zip https://download1320.mediafire.com/dekb1j49ymtgtQZxpZa_fpE-_NSAPQPdv3dmWX4ctUvNQXOVJJmXwP8MljwoveSYOF1kgINTEyvBOxF5sp-Jm0ag5bvM5GfxY-GSM2C7aDb7ILYs1ity9nUGs08KAgeCtGHw5cFCqy0b6CAWBumcqI15CHiVtlyawaeXr--CQw_rqQ/61xo8fluqqdr4xr/pics.zip  # Reemplazar con URL válida
+          wget -O mobile/assets/data/pics.zip https://download1320.mediafire.com/snqh44n55hygqvMBwlvXwPog6opxyY0zAOcsjMNLbUX-xzdwGT_QsBVLiKEUpe0kamDuNXAkr6yHVrYzyVg5wQ_v9KtL-X5Uih9BquN2SdjQRAjDHwtDpWjN1tlj5C2bVrnVNSMH5hlv1KdSwdkIvkLwIGC7hvde69eqr4EEKH7IEA/61xo8fluqqdr4xr/pics.zip  # Reemplazar con URL válida
           wget -O mobile/assets/data/scripts.zip https://github.com/termitaklk/assets-mobile/raw/refs/heads/main/data/scripts.zip  # Reemplazar con URL válida
           wget -O mobile/assets/data/fonts/ygo.ttf https://github.com/termitaklk/assets-mobile/raw/refs/heads/main/data/fonts/ygo.ttf  # Reemplazar con URL válida
 
