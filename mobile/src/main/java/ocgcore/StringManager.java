@@ -202,20 +202,13 @@ public class StringManager implements Closeable {
         return String.format("0x%x", key);
     }
 
-    public long getSetCode(String key, boolean fuzzy) {
+    public long getSetCode(String key) {
         for (int i = 0; i < mCardSets.size(); i++) {
             CardSet cardSet = mCardSets.get(i);
             String[] setNames = cardSet.getName().split("\\|");
-            if (fuzzy) {
-                if (setNames[0].contains(key)) {
-                    return cardSet.getCode();
-                }
-            } else {
-                if (setNames[0].equalsIgnoreCase(key)) {
-                    return cardSet.getCode();
-                }
+            if (setNames[0].equalsIgnoreCase(key)) {
+                return cardSet.getCode();
             }
-
         }
         return 0;
     }
