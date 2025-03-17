@@ -76,7 +76,7 @@ public class CardDetail extends BaseAdapterPlus.BaseViewHolder {
     private final CardLoader cardLoader;
     private final ImageView cardImage;
     private final TextView name;
-    private final ImageButton btn_related;
+    private final LinearLayout btn_related;
     private final TextView desc;
     private final TextView level;
     private final TextView type;
@@ -90,9 +90,9 @@ public class CardDetail extends BaseAdapterPlus.BaseViewHolder {
     private final TextView attrView;
     private final View monsterLayout;
     private final ImageButton close;
-    private final ImageButton faq;
-    private final ImageButton addMain;
-    private final ImageButton addSide;
+    private final LinearLayout faq;
+    private final LinearLayout addMain;
+    private final LinearLayout addSide;
     private final View linkArrow;
     private final View layoutDetailPScale;
     private final TextView detailCardScale;
@@ -395,7 +395,7 @@ public class CardDetail extends BaseAdapterPlus.BaseViewHolder {
                     String clickedText = ((TextView) widget).getText().subSequence(start, end).toString();
                     mListener.onSearchKeyWord(clickedText);
                 } else {
-                    YGOUtil.showTextToast(context.getString(R.string.searchResult) + context.getString(R.string.already_end));
+                    YGOUtil.showTextToast(context.getString(R.string.searchresult) + context.getString(R.string.already_end));
                 }
 
             }
@@ -410,7 +410,7 @@ public class CardDetail extends BaseAdapterPlus.BaseViewHolder {
 
     private List<Card> queryList(String keyword) {
         // 获取关键词对应的 setcode
-        long setcode = DataManager.get().getStringManager().getSetCode(keyword);
+        long setcode = DataManager.get().getStringManager().getSetCode(keyword, true);
         // 从 cardManager 获取所有卡片
         SparseArray<Card> cards = cardManager.getAllCards();
         if (cards == null) {
