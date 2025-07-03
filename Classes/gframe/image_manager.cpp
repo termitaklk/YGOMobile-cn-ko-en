@@ -9,10 +9,10 @@ ImageManager imageManager;
 bool ImageManager::Initial(const path dir) {
 	tCover[0] = driver->getTexture((dir + path("/textures/cover.jpg")).c_str());
 	tCover[1] = driver->getTexture((dir + path("/textures/cover2.jpg")).c_str());
-	tBigPicture = nullptr;
 	if(!tCover[1])
 		tCover[1] = tCover[0];
 	tUnknown = driver->getTexture((dir + path("/textures/unknown.jpg")).c_str());
+	tBigPicture = nullptr;
 	tAct = driver->getTexture((dir + path("/textures/act.png")).c_str());
 	tAttack = driver->getTexture((dir + path("/textures/attack.png")).c_str());
 	tTotalAtk = driver->getTexture((dir + path("/textures/totalAtk.png")).c_str());
@@ -204,7 +204,7 @@ irr::video::ITexture* ImageManager::GetBigPicture(int code, float zoom) {
 		texture = driver->addTexture(file, srcimg);
 	} else {
 		auto origsize = srcimg->getDimension();
-		video::IImage* destimg = driver->createImage(srcimg->getColorFormat(), irr::core::dimension2d<u32>(origsize.Width * zoom, origsize.Height * zoom));
+		irr::video::IImage* destimg = driver->createImage(srcimg->getColorFormat(), irr::core::dimension2d<irr::u32>(origsize.Width * zoom, origsize.Height * zoom));
 		//imageScaleNNAA(srcimg, destimg);
 		texture = driver->addTexture(file, destimg);
 		destimg->drop();

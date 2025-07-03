@@ -49,7 +49,7 @@
 #define mystrncasecmp strncasecmp
 
 #include <cstdio>
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 #include <algorithm>
 #include <string>
@@ -69,14 +69,24 @@ inline FILE* mywfopen(const wchar_t* filename, const char* mode) {
 	return fp;
 }
 
+#if !defined(_WIN32)
+#define myfopen std::fopen
+#elif defined(WDK_NTDDI_VERSION) && (WDK_NTDDI_VERSION >= 0x0A000005) // Redstone 4, Version 1803, Build 17134.
+#define FOPEN_WINDOWS_SUPPORT_UTF8
+#define myfopen std::fopen
+#else
+inline FILE* myfopen(const char* filename, const char* mode) {
+	wchar_t wfilename[256]{};
+	BufferIO::DecodeUTF8(filename, wfilename);
+	wchar_t wmode[20]{};
+	BufferIO::CopyCharArray(mode, wmode);
+	return _wfopen(wfilename, wmode);
+}
+#endif
+
 #include <irrlicht.h>
-using namespace irr;
-using namespace core;
-using namespace scene;
-using namespace video;
-using namespace io;
-using namespace gui;
-using namespace os;
+using namespace irr::io;
+using namespace irr::os;
 
 extern const unsigned short PRO_VERSION;
 extern unsigned int enable_log;

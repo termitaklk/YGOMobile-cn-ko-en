@@ -1,8 +1,7 @@
+#include <array>
 #include "config.h"
 #include "deck_con.h"
 #include "myfilesystem.h"
-#include "data_manager.h"
-#include "deck_manager.h"
 #include "image_manager.h"
 #include "game.h"
 #include "duelclient.h"
@@ -65,6 +64,14 @@ static inline void load_current_deck(irr::gui::IGUIComboBox* cbCategory, irr::gu
 	deckManager.LoadCurrentDeck(cbCategory, cbDeck);
 }
 
+DeckBuilder::DeckBuilder() {
+	std::random_device rd;
+	std::array<uint32_t, 8> seed{};
+	for (auto& x : seed)
+		x = rd();
+	std::seed_seq seq(seed.begin(), seed.end());
+	rnd.seed(seq);
+}
 void DeckBuilder::Initialize() {
 	mainGame->is_building = true;
 	mainGame->is_siding = false;
@@ -100,7 +107,6 @@ void DeckBuilder::Initialize() {
 		filterList = &deckManager._lfList.back();
 	}
 	ClearSearch();
-	rnd.reset((uint_fast32_t)std::time(nullptr));
 	mouse_pos.set(0, 0);
 	hovered_code = 0;
 	hovered_pos = 0;
@@ -150,13 +156,13 @@ void DeckBuilder::Terminate() {
 	if (catesel >= 0)
 		BufferIO::CopyWideString(mainGame->cbDBCategory->getItem(catesel), mainGame->gameConf.lastcategory);
 	    BufferIO::EncodeUTF8(mainGame->gameConf.lastcategory, linebuf);
-		android::setLastCategory(mainGame->appMain, linebuf);
+		irr::android::setLastCategory(mainGame->appMain, linebuf);
 		//irr:os::Printer::log("setLastCategory", linebuf);
 	int decksel = mainGame->cbDBDecks->getSelected();
 	if (decksel >= 0)
 		BufferIO::CopyWideString(mainGame->cbDBDecks->getItem(decksel), mainGame->gameConf.lastdeck);
 		BufferIO::EncodeUTF8(mainGame->gameConf.lastdeck, linebuf);
-		android::setLastDeck(mainGame->appMain, linebuf);
+		irr::android::setLastDeck(mainGame->appMain, linebuf);
 		//os::Printer::log("setLastDeck", linebuf);
 	mainGame->SaveConfig();
 	if(exit_on_return)
@@ -173,7 +179,7 @@ bool DeckBuilder::OnEvent(const irr::SEvent& event) {
 		return false;
 	switch(event.EventType) {
 	case irr::EET_GUI_EVENT: {
-		s32 id = event.GUIEvent.Caller->getID();
+		irr::s32 id = event.GUIEvent.Caller->getID();
 		if(((mainGame->wCategories->isVisible() && id != BUTTON_CATEGORY_OK) ||
 			(mainGame->wQuery->isVisible() && id != BUTTON_YES && id != BUTTON_NO) ||
 			(mainGame->wLinkMarks->isVisible() && id != BUTTON_MARKERS_OK) ||
@@ -211,7 +217,7 @@ bool DeckBuilder::OnEvent(const irr::SEvent& event) {
 				break;
 			}
 			case BUTTON_SHUFFLE_DECK: {
-				rnd.shuffle_vector(deckManager.current_deck.main);
+				std::shuffle(deckManager.current_deck.main.begin(), deckManager.current_deck.main.end(), rnd);
 				break;
 			}
 			case BUTTON_SAVE_DECK: {

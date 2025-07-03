@@ -13,6 +13,19 @@
 #include "group.h"
 #include "ocgapi.h"
 
+#ifdef _IRR_ANDROID_PLATFORM_
+int32_t scriptlib::duel_load_script(lua_State *L) {
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_STRING, 1);
+	duel* pduel = interpreter::get_duel_info(L); 
+	const char* pstr = lua_tostring(L, 1);
+	char filename[64];
+	sprintf(filename, "./script/%s", pstr);
+	lua_pushboolean(L, pduel->lua->load_script(filename));
+	return 1;
+}
+#endif
+
 int32_t scriptlib::duel_enable_global_flag(lua_State *L) {
 	check_param_count(L, 1);
 	int32_t flag = (int32_t)lua_tointeger(L, 1);
@@ -183,9 +196,9 @@ int32_t scriptlib::duel_get_flag_effect_label(lua_State *L) {
 		lua_pushnil(L);
 		return 1;
 	}
-	for(int32_t i = 0; i < eset.size(); ++i)
+	for(effect_set::size_type i = 0; i < eset.size(); ++i)
 		lua_pushinteger(L, eset[i]->label.size() ? eset[i]->label[0] : 0);
-	return eset.size();
+	return (int32_t)eset.size();
 }
 int32_t scriptlib::duel_destroy(lua_State *L) {
 	check_action_permission(L);
@@ -1057,8 +1070,12 @@ int32_t scriptlib::duel_confirm_cards(lua_State *L) {
 		pduel = pgroup->pduel;
 	} else
 		return luaL_error(L, "Parameter %d should be \"Card\" or \"Group\".", 2);
+	uint8_t skip_panel = 0;
+	if(lua_gettop(L) >= 3)
+		skip_panel = lua_toboolean(L, 3);
 	pduel->write_buffer8(MSG_CONFIRM_CARDS);
 	pduel->write_buffer8(playerid);
+	pduel->write_buffer8(skip_panel);
 	if(pcard) {
 		pduel->write_buffer8(1);
 		pduel->write_buffer32(pcard->data.code);
@@ -1249,7 +1266,7 @@ int32_t scriptlib::duel_is_environment(lua_State *L) {
 		effect_set eset;
 		pduel->game_field->filter_field_effect(EFFECT_CHANGE_ENVIRONMENT, &eset);
 		if(eset.size()) {
-			effect* peffect = eset.get_last();
+			effect* peffect = eset.back();
 			if(code == (uint32_t)peffect->get_value() && (playerid == peffect->get_handler_player() || playerid == PLAYER_ALL))
 				ret = 1;
 		}
@@ -4281,7 +4298,7 @@ int32_t scriptlib::duel_is_player_affected_by_effect(lua_State *L) {
 	effect_set eset;
 	pduel->game_field->filter_player_effect(playerid, code, &eset);
 	int32_t size = 0;
-	for(int32_t i = 0; i < eset.size(); ++i) {
+	for(effect_set::size_type i = 0; i < eset.size(); ++i) {
 		if(eset[i]->check_count_limit(playerid)) {
 			interpreter::effect2value(L, eset[i]);
 			++size;
@@ -4839,6 +4856,10 @@ int32_t scriptlib::duel_majestic_copy(lua_State *L) {
 }
 
 static const struct luaL_Reg duellib[] = {
+	#ifdef _IRR_ANDROID_PLATFORM_
+	{ "LoadScript", scriptlib::duel_load_script },
+	#endif
+	
 	{ "EnableGlobalFlag", scriptlib::duel_enable_global_flag },
 	{ "GetLP", scriptlib::duel_get_lp },
 	{ "SetLP", scriptlib::duel_set_lp },

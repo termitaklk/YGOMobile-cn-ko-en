@@ -10,9 +10,10 @@ DeckManager deckManager;
 
 void DeckManager::LoadLFListSingle(const char* path) {
 	auto cur = _lfList.rend();
-	FILE* fp = std::fopen(path, "r");
+	FILE* fp = myfopen(path, "r");
 	char linebuf[256]{};
 	wchar_t strBuffer[256]{};
+	char str1[16]{};
 	if(fp) {
 		while(std::fgets(linebuf, sizeof linebuf, fp)) {
 			if(linebuf[0] == '#')
@@ -32,18 +33,19 @@ void DeckManager::LoadLFListSingle(const char* path) {
 				continue;
 			unsigned int code = 0;
 			int count = -1;
-			if (std::sscanf(linebuf, "%9u%*[ ]%9d", &code, &count) != 2)
+			if (std::sscanf(linebuf, "%10s%*[ ]%1d", str1, &count) != 2)
 				continue;
 			if (count < 0 || count > 2)
 				continue;
+			code = std::strtoul(str1, nullptr, 10);
 			cur->content[code] = count;
 			cur->hash = cur->hash ^ ((code << 18) | (code >> 14)) ^ ((code << (27 + count)) | (code >> (5 - count)));
 		}
 		std::fclose(fp);
 	}
 }
-void DeckManager::LoadLFList(android::InitOptions *options) {
-	io::path workingDir = options->getWorkDir();
+void DeckManager::LoadLFList(irr::android::InitOptions *options) {
+    irr::io::path workingDir = options->getWorkDir();
 	LoadLFListSingle((workingDir + path("/expansions/lflist.conf")).c_str());
 	LoadLFListSingle((workingDir + path("/lflist.conf")).c_str());
 	LFList nolimit;
@@ -76,7 +78,7 @@ static unsigned int checkAvail(unsigned int ot, unsigned int avail) {
 		return DECKERROR_TCGONLY;
 	return DECKERROR_NOTAVAIL;
 }
-unsigned int DeckManager::CheckDeck(Deck& deck, int lfhash, int rule) {
+unsigned int DeckManager::CheckDeck(const Deck& deck, unsigned int lfhash, int rule) {
 	std::unordered_map<int, int> ccount;
 	// rule
 	if(deck.main.size() < DECK_MIN_SIZE || deck.main.size() > DECK_MAX_SIZE)
@@ -140,13 +142,12 @@ unsigned int DeckManager::CheckDeck(Deck& deck, int lfhash, int rule) {
 	}
 	return 0;
 }
-int DeckManager::LoadDeck(Deck& deck, int* dbuf, int mainc, int sidec, bool is_packlist) {
+uint32_t DeckManager::LoadDeck(Deck& deck, uint32_t dbuf[], int mainc, int sidec, bool is_packlist) {
 	deck.clear();
-	int code;
-	int errorcode = 0;
+	uint32_t errorcode = 0;
 	CardData cd;
 	for(int i = 0; i < mainc; ++i) {
-		code = dbuf[i];
+		auto code = dbuf[i];
 		if(!dataManager.GetData(code, &cd)) {
 			errorcode = code;
 			continue;
@@ -169,7 +170,7 @@ int DeckManager::LoadDeck(Deck& deck, int* dbuf, int mainc, int sidec, bool is_p
 		}
 	}
 	for(int i = 0; i < sidec; ++i) {
-		code = dbuf[mainc + i];
+		auto code = dbuf[mainc + i];
 		if(!dataManager.GetData(code, &cd)) {
 			errorcode = code;
 			continue;
@@ -183,22 +184,21 @@ int DeckManager::LoadDeck(Deck& deck, int* dbuf, int mainc, int sidec, bool is_p
 	}
 	return errorcode;
 }
-int DeckManager::LoadDeck(Deck& deck, std::istringstream& deckStream, bool is_packlist) {
-	size_t ct = 0;
-	int mainc = 0, sidec = 0, code = 0;
-	int cardlist[PACK_MAX_SIZE]{};
+uint32_t DeckManager::LoadDeckFromStream(Deck& deck, std::istringstream& deckStream, bool is_packlist) {
+	int ct = 0;
+	int mainc = 0, sidec = 0;
+	uint32_t cardlist[PACK_MAX_SIZE]{};
 	bool is_side = false;
 	std::string linebuf;
-	while (std::getline(deckStream, linebuf, '\n') && ct < (sizeof cardlist / sizeof cardlist[0])) {
+	while (std::getline(deckStream, linebuf, '\n') && ct < PACK_MAX_SIZE) {
 		if (linebuf[0] == '!') {
 			is_side = true;
 			continue;
 		}
 		if (linebuf[0] < '0' || linebuf[0] > '9')
 			continue;
-		errno = 0;
-		code = strtol(linebuf.c_str(), nullptr, 10);
-		if (errno == ERANGE)
+		auto code = std::strtoul(linebuf.c_str(), nullptr, 10);
+		if (code >= UINT32_MAX)
 			continue;
 		cardlist[ct++] = code;
 		if (is_side)
@@ -208,32 +208,32 @@ int DeckManager::LoadDeck(Deck& deck, std::istringstream& deckStream, bool is_pa
 	}
 	return LoadDeck(deck, cardlist, mainc, sidec, is_packlist);
 }
-bool DeckManager::LoadSide(Deck& deck, int* dbuf, int mainc, int sidec) {
-	std::unordered_map<int, int> pcount;
-	std::unordered_map<int, int> ncount;
+bool DeckManager::LoadSide(Deck& deck, uint32_t dbuf[], int mainc, int sidec) {
+	std::unordered_map<uint32_t, int> pcount;
+	std::unordered_map<uint32_t, int> ncount;
 	for(size_t i = 0; i < deck.main.size(); ++i)
-		++pcount[deck.main[i]->first];
+		pcount[deck.main[i]->first]++;
 	for(size_t i = 0; i < deck.extra.size(); ++i)
-		++pcount[deck.extra[i]->first];
+		pcount[deck.extra[i]->first]++;
 	for(size_t i = 0; i < deck.side.size(); ++i)
-		++pcount[deck.side[i]->first];
+		pcount[deck.side[i]->first]++;
 	Deck ndeck;
 	LoadDeck(ndeck, dbuf, mainc, sidec);
 	if (ndeck.main.size() != deck.main.size() || ndeck.extra.size() != deck.extra.size() || ndeck.side.size() != deck.side.size())
 		return false;
 	for(size_t i = 0; i < ndeck.main.size(); ++i)
-		++ncount[ndeck.main[i]->first];
+		ncount[ndeck.main[i]->first]++;
 	for(size_t i = 0; i < ndeck.extra.size(); ++i)
-		++ncount[ndeck.extra[i]->first];
+		ncount[ndeck.extra[i]->first]++;
 	for(size_t i = 0; i < ndeck.side.size(); ++i)
-		++ncount[ndeck.side[i]->first];
+		ncount[ndeck.side[i]->first]++;
 	for (auto& cdit : ncount)
 		if (cdit.second != pcount[cdit.first])
 			return false;
 	deck = ndeck;
 	return true;
 }
-void DeckManager::GetCategoryPath(wchar_t* ret, int index, const wchar_t* text, bool showPack) {
+void DeckManager::GetCategoryPath(wchar_t* ret, int index, const wchar_t* text, bool showPack) {//hide packlist if showing on duelling ready
 	wchar_t catepath[256];
 	switch(index) {
 	case 0:
@@ -287,9 +287,13 @@ irr::io::IReadFile* DeckManager::OpenDeckReader(const wchar_t* file) {
 	auto reader = DataManager::FileSystem->createAndOpenFile(file2);
 	return reader;
 }
+bool DeckManager::LoadCurrentDeck(std::istringstream& deckStream, bool is_packlist) {
+	LoadDeckFromStream(current_deck, deckStream, is_packlist);
+	return true;  // the above LoadDeck has return value but we ignore it here for now
+}
 bool DeckManager::LoadCurrentDeck(const wchar_t* file, bool is_packlist) {
 	current_deck.clear();
-	IReadFile* reader = OpenDeckReader(file);
+	auto reader = OpenDeckReader(file);
 	if(!reader) {
 		wchar_t localfile[256];
 		myswprintf(localfile, L"./deck/%ls.ydk", file);
@@ -309,41 +313,44 @@ bool DeckManager::LoadCurrentDeck(const wchar_t* file, bool is_packlist) {
 		return false;
 	}
 	std::istringstream deckStream(deckBuffer);
-	LoadDeck(current_deck, deckStream, is_packlist);
-	return true;  // the above LoadDeck has return value but we ignore it here for now
+	LoadDeckFromStream(current_deck, deckStream, is_packlist);
+	return true;  // the above function has return value but we ignore it here for now
 }
 bool DeckManager::LoadCurrentDeck(irr::gui::IGUIComboBox* cbCategory, irr::gui::IGUIComboBox* cbDeck) {
 	wchar_t filepath[256];
 	GetDeckFile(filepath, cbCategory, cbDeck);
-	bool is_packlist = cbCategory->getSelected() == 0;
+	bool is_packlist = (cbCategory->getSelected() == 0);
 	bool res = LoadCurrentDeck(filepath, is_packlist);
 	if (res && mainGame->is_building)
 		mainGame->deckBuilder.RefreshPackListScroll();
 	return res;
 }
-bool DeckManager::SaveDeck(Deck& deck, const wchar_t* file) {
+void DeckManager::SaveDeck(const Deck& deck, std::stringstream& deckStream) {
+	deckStream << "#created by ..." << std::endl;
+	deckStream << "#main" << std::endl;
+	for(size_t i = 0; i < deck.main.size(); ++i)
+		deckStream << deck.main[i]->first << std::endl;
+	deckStream << "#extra" << std::endl;
+	for(size_t i = 0; i < deck.extra.size(); ++i)
+		deckStream << deck.extra[i]->first << std::endl;
+	deckStream << "!side" << std::endl;
+	for(size_t i = 0; i < deck.side.size(); ++i)
+		deckStream << deck.side[i]->first << std::endl;
+}
+bool DeckManager::SaveDeck(const Deck& deck, const wchar_t* file) {
 	if(!FileSystem::IsDirExists(L"./deck") && !FileSystem::MakeDir(L"./deck"))
 		return false;
 	FILE* fp = OpenDeckFile(file, "w");
 	if(!fp)
 		return false;
-	std::fprintf(fp, "#created by ygomobile\n#main\n");
-	for(size_t i = 0; i < deck.main.size(); ++i)
-		std::fprintf(fp, "%d\n", deck.main[i]->first);
-	std::fprintf(fp, "#extra\n");
-	for(size_t i = 0; i < deck.extra.size(); ++i)
-		std::fprintf(fp, "%d\n", deck.extra[i]->first);
-	std::fprintf(fp, "!side\n");
-	for(size_t i = 0; i < deck.side.size(); ++i)
-		std::fprintf(fp, "%d\n", deck.side[i]->first);
+	std::stringstream deckStream;
+	SaveDeck(deck, deckStream);
+	std::fwrite(deckStream.str().c_str(), 1, deckStream.str().length(), fp);
 	std::fclose(fp);
 	return true;
 }
 bool DeckManager::DeleteDeck(const wchar_t* file) {
-	char filefn[256];
-	BufferIO::EncodeUTF8(file, filefn);
-	int result = unlink(filefn);
-	return result == 0;
+	return FileSystem::RemoveFile(file);
 }
 bool DeckManager::CreateCategory(const wchar_t* name) {
 	if(!FileSystem::IsDirExists(L"./deck") && !FileSystem::MakeDir(L"./deck"))
@@ -372,34 +379,21 @@ bool DeckManager::DeleteCategory(const wchar_t* name) {
 		return false;
 	return FileSystem::DeleteDir(localname);
 }
-bool DeckManager::SaveDeckBuffer(const int deckbuf[], const wchar_t* name) {
+bool DeckManager::SaveDeckArray(const DeckArray& deck, const wchar_t* name) {
 	if (!FileSystem::IsDirExists(L"./deck") && !FileSystem::MakeDir(L"./deck"))
 		return false;
 	FILE* fp = OpenDeckFile(name, "w");
 	if (!fp)
 		return false;
-	int it = 0;
-	const int mainc = deckbuf[it];
-	++it;
 	std::fprintf(fp, "#created by ...\n#main\n");
-	for (int i = 0; i < mainc; ++i) {
-		std::fprintf(fp, "%d\n", deckbuf[it]);
-		++it;
-	}
-	const int extrac = deckbuf[it];
-	++it;
+	for (const auto& code : deck.main)
+		std::fprintf(fp, "%u\n", code);
 	std::fprintf(fp, "#extra\n");
-	for (int i = 0; i < extrac; ++i) {
-		std::fprintf(fp, "%d\n", deckbuf[it]);
-		++it;
-	}
-	const int sidec = deckbuf[it];
-	++it;
+	for (const auto& code : deck.extra)
+		std::fprintf(fp, "%u\n", code);
 	std::fprintf(fp, "!side\n");
-	for (int i = 0; i < sidec; ++i) {
-		std::fprintf(fp, "%d\n", deckbuf[it]);
-		++it;
-	}
+	for (const auto& code : deck.side)
+		std::fprintf(fp, "%u\n", code);
 	std::fclose(fp);
 	return true;
 }

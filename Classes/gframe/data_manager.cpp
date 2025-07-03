@@ -83,14 +83,14 @@ bool DataManager::ReadDB(sqlite3* pDB) {
 bool DataManager::LoadDB(const wchar_t* wfile) {
 	char file[256];
 	BufferIO::EncodeUTF8(wfile, file);
-	IReadFile* reader = FileSystem->createAndOpenFile(file);
+	auto reader = FileSystem->createAndOpenFile(file);
 	if(reader == nullptr)
 		return false;
 	spmemvfs_db_t db;
-	spmembuffer_t* mem = (spmembuffer_t*)calloc(sizeof(spmembuffer_t), 1);
+	spmembuffer_t* mem = (spmembuffer_t*)std::calloc(sizeof(spmembuffer_t), 1);
 	spmemvfs_env_init();
 	mem->total = mem->used = reader->getSize();
-	mem->data = (char*)malloc(mem->total + 1);
+	mem->data = (char*)std::malloc(mem->total + 1);
 	reader->read(mem->data, mem->total);
 	reader->drop();
 	(mem->data)[mem->total] = '\0';
@@ -104,7 +104,7 @@ bool DataManager::LoadDB(const wchar_t* wfile) {
 	return ret;
 }
 bool DataManager::LoadStrings(const char* file) {
-	FILE* fp = std::fopen(file, "r");
+	FILE* fp = myfopen(file, "r");
 	if(!fp)
 		return false;
 	char linebuf[TEXT_LINE_SIZE]{};
@@ -161,8 +161,7 @@ void DataManager::ReadStringConfLine(const char* linebuf) {
 	}
 }
 bool DataManager::Error(sqlite3* pDB, sqlite3_stmt* pStmt) {
-	errmsg[0] = '\0';
-	std::strncat(errmsg, sqlite3_errmsg(pDB), sizeof errmsg - 1);
+	std::snprintf(errmsg, sizeof errmsg, "%s", sqlite3_errmsg(pDB));
 	if(pStmt)
 		sqlite3_finalize(pStmt);
     ALOGE("cc data_manager: cdb Error=", errmsg);
@@ -411,7 +410,7 @@ unsigned char* DataManager::ScriptReaderEx(const char* script_path, int* slen) {
 	return nullptr;
 }
 unsigned char* DataManager::ReadScriptFromIrrFS(const char* script_name, int* slen) {
-	IReadFile* reader = FileSystem->createAndOpenFile(script_name);
+	auto reader = FileSystem->createAndOpenFile(script_name);
 	if (!reader)
 		return nullptr;
 	int size = reader->read(scriptBuffer, sizeof scriptBuffer);
@@ -422,9 +421,7 @@ unsigned char* DataManager::ReadScriptFromIrrFS(const char* script_name, int* sl
 	return scriptBuffer;
 }
 unsigned char* DataManager::ReadScriptFromFile(const char* script_name, int* slen) {
-	wchar_t fname[256]{};
-	BufferIO::DecodeUTF8(script_name, fname);
-	FILE* fp = mywfopen(fname, "rb");
+	FILE* fp = myfopen(script_name, "rb");
 	if (!fp)
 		return nullptr;
 	size_t len = std::fread(scriptBuffer, 1, sizeof scriptBuffer, fp);
